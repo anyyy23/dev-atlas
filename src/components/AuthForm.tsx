@@ -1,18 +1,62 @@
 "use client"; //para que lo lea el navegador, todo se ejecuta en el navegador
 import Link from "next/link";
 import { useState } from "react";
+import { auth } from "@/lib/firebaseConfig";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 type AuthFormProps = { mode: "login" | "signup" };
 export default function AuthForm({ mode }: AuthFormProps) {
   const esRegistro = mode === "signup"; //3 veces igual, comparar tipo de dato y el valor de dato
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+
   const labelClass =
     "block font-label-ui text-label-ui text-on-surface-variant font-medium";
   const inputClass =
     "w-full rounded-lg border-outline-variant/30 bg-background px-4 py-3 text-sm text-on-surface-outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+  async function sendForm(event: React.FormEvent<HTMLFormElement>) {
+    setError("");
+    event.preventDefault();
+    if (esRegistro && password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      console.log(error);
+      return;
+    }
+
+    try {
+      if (esRegistro) {
+        const resultado = await createUserWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password,
+        );
+        await updateProfile(resultado.user, { displayName: name.trim() }); //
+      }
+    } catch (error) {
+      console.log("Error de Firebase Auth: ", error);
+      setError(
+        esRegistro
+          ? "Error al intentar crear la cuenta. Revisa datos o correo"
+          : "No se pudo iniciar sesión. Revisa tus credenciales o intenta más tarde",
+      );
+    }
+
+    console.log({
+      modo: mode,
+      nombre: esRegistro ? name : undefined,
+      email: email,
+      password: password,
+    });
+  }
   return (
-    <form className="space-y-4">
+    <form className="space-y-4" onSubmit={sendForm}>
       {esRegistro && (
         <div className="space-y-1.5">
           <label htmlFor="nombre" className={labelClass}>
@@ -29,6 +73,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
               required
               placeholder="Tu nombre completo"
               className={inputClass}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
         </div>
@@ -49,6 +95,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
             autoComplete="email"
             required
             className={inputClass}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
       </div>
@@ -77,6 +125,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
             autoComplete="current-password"
             required
             className="w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest py-2.5 pl-10 pr-10 text-on-surface placeholder-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <button
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-outline transition-colors hover:text-on-surface-variant focus:outline-none"
@@ -109,11 +159,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
               autoComplete="new-password"
               required
               className="w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest py-2.5 pl-10 pr-10 text-on-surface placeholder-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
             <button
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-outline transition-colors hover:text-on-surface-variant focus:outline-none"
               type="button"
-              onClick={() => setShowConfirmPassword((currentValue) => !currentValue)}
+              onClick={() =>
+                setShowConfirmPassword((currentValue) => !currentValue)
+              }
             >
               <span className="material-symbols-outlined">
                 {showConfirmPassword ? "visibility_off" : "visibility"}
@@ -139,18 +193,21 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </div>
       )}
       <div className="pt-2">
-      <button
-        type="submit"
-        className="w-full flex items-center justify-center gap-2 bg-primary-container opacity-70 cursor-not-allowed text-on-primary font-label-ui text-label-ui font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-all duration-150 active:scale-[0.98] border border-white/10"
-        disabled
-        title="La autenticación se integrará después"
-        
-     >
-        <span>{esRegistro ? "Crear Cuenta" : "Acceder a DevAtlas"}</span>
-        <span className="material-symbols-outlined text-xl">
-          {esRegistro ? "person_add" : "arrow_forward"}
-        </span>
-      </button>
+        {error && (
+          <p role="alert" className="text-error text-sm">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          className="w-full flex items-center justify-center gap-2 bg-primary-container opacity-70 cursor-pointer text-on-primary font-label-ui text-label-ui font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-all duration-150 active:scale-[0.98] border border-white/10"
+          title="La autenticación se integrará después"
+        >
+          <span>{esRegistro ? "Crear Cuenta" : "Acceder a DevAtlas"}</span>
+          <span className="material-symbols-outlined text-xl">
+            {esRegistro ? "person_add" : "arrow_forward"}
+          </span>
+        </button>
       </div>
     </form>
   );
