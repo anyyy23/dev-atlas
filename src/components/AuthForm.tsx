@@ -2,7 +2,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { auth } from "@/lib/firebaseConfig";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 type AuthFormProps = { mode: "login" | "signup" };
 export default function AuthForm({ mode }: AuthFormProps) {
@@ -15,6 +20,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const labelClass =
     "block font-label-ui text-label-ui text-on-surface-variant font-medium";
@@ -37,8 +43,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
           email.trim(),
           password,
         );
-        await updateProfile(resultado.user, { displayName: name.trim() }); //
+        await updateProfile(resultado.user, { displayName: name.trim() });
+      } else {
+        await signInWithEmailAndPassword(auth, email.trim(), password);
       }
+      router.push("/dashboard");
     } catch (error) {
       console.log("Error de Firebase Auth: ", error);
       setError(
