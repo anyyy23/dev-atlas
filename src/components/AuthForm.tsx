@@ -43,6 +43,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           email.trim(),
           password,
         );
+        //esto es para guardar el nombre del usuario en el perfil de firebase
         await updateProfile(resultado.user, { displayName: name.trim() });
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
